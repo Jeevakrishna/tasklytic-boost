@@ -1,12 +1,9 @@
 import { useState } from "react";
 import { Card } from "@/components/ui/card";
-import {
-  ChartContainer,
-  ChartTooltip,
-  ChartTooltipContent,
-} from "@/components/ui/chart";
-import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, PieChart, Pie, Cell } from "recharts";
 import { Calendar, Clock, Target, TrendingUp } from "lucide-react";
+import { PriorityPieChart } from "./charts/PriorityPieChart";
+import { CompletionBarChart } from "./charts/CompletionBarChart";
+import { ProductivityLineChart } from "./charts/ProductivityLineChart";
 
 interface AnalyticsProps {
   tasks: Array<{
@@ -25,15 +22,18 @@ export function Analytics({ tasks }: AnalyticsProps) {
   const totalTasks = tasks.length;
   const completedTasks = tasks.filter((task) => task.completed).length;
   const completionRate = totalTasks > 0 ? (completedTasks / totalTasks) * 100 : 0;
+  const highPriorityCompletion = tasks.filter(
+    (t) => t.priority === "High" && t.completed
+  ).length;
   
-  // Priority distribution data for pie chart
+  // Priority distribution data
   const priorityData = [
     { name: "High", value: tasks.filter((t) => t.priority === "High").length },
     { name: "Medium", value: tasks.filter((t) => t.priority === "Medium").length },
     { name: "Low", value: tasks.filter((t) => t.priority === "Low").length },
   ];
 
-  // Weekly completion data for bar chart
+  // Weekly completion data
   const weeklyData = [
     { day: "Mon", tasks: 4 },
     { day: "Tue", tasks: 6 },
@@ -44,7 +44,13 @@ export function Analytics({ tasks }: AnalyticsProps) {
     { day: "Sun", tasks: 1 },
   ];
 
-  const COLORS = ["#FF7F50", "#FFB347", "#98FB98"];
+  // Monthly productivity trend
+  const productivityData = [
+    { week: "Week 1", completion: 75 },
+    { week: "Week 2", completion: 82 },
+    { week: "Week 3", completion: 88 },
+    { week: "Week 4", completion: 85 },
+  ];
 
   return (
     <div className="space-y-8 p-6">
@@ -79,49 +85,32 @@ export function Analytics({ tasks }: AnalyticsProps) {
         <Card className="p-4 flex items-center space-x-4">
           <Calendar className="h-8 w-8 text-primary" />
           <div>
-            <p className="text-sm text-muted-foreground">Active Days</p>
-            <h3 className="text-2xl font-bold">5</h3>
+            <p className="text-sm text-muted-foreground">High Priority Done</p>
+            <h3 className="text-2xl font-bold">{highPriorityCompletion}</h3>
           </div>
         </Card>
       </div>
 
       {/* Charts */}
-      <div className="grid gap-4 md:grid-cols-2">
+      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
         <Card className="p-4">
           <h3 className="text-lg font-semibold mb-4">Tasks by Priority</h3>
           <div className="h-[300px]">
-            <ResponsiveContainer width="100%" height="100%">
-              <PieChart>
-                <Pie
-                  data={priorityData}
-                  cx="50%"
-                  cy="50%"
-                  labelLine={false}
-                  outerRadius={80}
-                  fill="#8884d8"
-                  dataKey="value"
-                >
-                  {priorityData.map((entry, index) => (
-                    <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
-                  ))}
-                </Pie>
-                <Tooltip content={<ChartTooltipContent />} />
-              </PieChart>
-            </ResponsiveContainer>
+            <PriorityPieChart data={priorityData} />
           </div>
         </Card>
 
         <Card className="p-4">
           <h3 className="text-lg font-semibold mb-4">Weekly Task Completion</h3>
           <div className="h-[300px]">
-            <ResponsiveContainer width="100%" height="100%">
-              <BarChart data={weeklyData}>
-                <XAxis dataKey="day" />
-                <YAxis />
-                <Tooltip content={<ChartTooltipContent />} />
-                <Bar dataKey="tasks" fill="#6B9080" />
-              </BarChart>
-            </ResponsiveContainer>
+            <CompletionBarChart data={weeklyData} />
+          </div>
+        </Card>
+
+        <Card className="p-4">
+          <h3 className="text-lg font-semibold mb-4">Monthly Productivity Trend</h3>
+          <div className="h-[300px]">
+            <ProductivityLineChart data={productivityData} />
           </div>
         </Card>
       </div>
