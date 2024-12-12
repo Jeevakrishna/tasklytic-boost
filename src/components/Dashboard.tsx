@@ -1,15 +1,15 @@
 import { useState } from "react";
 import { TaskCard } from "./TaskCard";
 import { Button } from "@/components/ui/button";
-import { BarChart2, Crown } from "lucide-react";
+import { BarChart2, Crown, LayoutDashboard } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { TaskForm } from "./TaskForm";
+import { Analytics } from "./Analytics";
 import {
   Dialog,
   DialogContent,
   DialogHeader,
   DialogTitle,
-  DialogTrigger,
 } from "@/components/ui/dialog";
 
 interface Task {
@@ -60,6 +60,7 @@ export function Dashboard() {
 
   const [isPremium, setIsPremium] = useState(false);
   const [showPremiumDialog, setShowPremiumDialog] = useState(false);
+  const [view, setView] = useState<"tasks" | "analytics">("tasks");
 
   const handleAddTask = (newTask: Omit<Task, "id" | "completed" | "streak">) => {
     const task: Task = {
@@ -80,11 +81,7 @@ export function Dashboard() {
     if (!isPremium) {
       setShowPremiumDialog(true);
     } else {
-      toast({
-        title: "Analytics",
-        description: "Opening analytics dashboard...",
-        duration: 3000,
-      });
+      setView("analytics");
     }
   };
 
@@ -94,7 +91,6 @@ export function Dashboard() {
       description: "Redirecting to payment page...",
       duration: 3000,
     });
-    // Here you would typically redirect to your payment processing page
     window.open('https://paypal.com', '_blank');
   };
 
@@ -112,19 +108,35 @@ export function Dashboard() {
             )}
           </div>
           <div className="flex gap-4">
-            <TaskForm onSubmit={handleAddTask} />
-            <Button onClick={handleViewAnalytics} variant="outline" className="hover-scale">
+            <Button 
+              onClick={() => setView("tasks")} 
+              variant={view === "tasks" ? "default" : "outline"}
+              className="hover-scale"
+            >
+              <LayoutDashboard className="mr-2 h-4 w-4" />
+              Tasks
+            </Button>
+            <Button 
+              onClick={handleViewAnalytics} 
+              variant={view === "analytics" ? "default" : "outline"}
+              className="hover-scale"
+            >
               <BarChart2 className="mr-2 h-4 w-4" />
               Analytics
             </Button>
+            {view === "tasks" && <TaskForm onSubmit={handleAddTask} />}
           </div>
         </div>
         
-        <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-          {tasks.map((task) => (
-            <TaskCard key={task.id} {...task} />
-          ))}
-        </div>
+        {view === "tasks" ? (
+          <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+            {tasks.map((task) => (
+              <TaskCard key={task.id} {...task} />
+            ))}
+          </div>
+        ) : (
+          <Analytics tasks={tasks} />
+        )}
       </div>
 
       <Dialog open={showPremiumDialog} onOpenChange={setShowPremiumDialog}>
