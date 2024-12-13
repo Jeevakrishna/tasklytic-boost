@@ -1,22 +1,33 @@
-import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer } from "recharts";
-import { ChartTooltipContent } from "@/components/ui/chart";
+import { BarChart, Bar, XAxis, YAxis, CartesianGrid, ResponsiveContainer } from "recharts";
+import { ChartContainer, ChartTooltip } from "@/components/ui/chart";
 
-interface CompletionBarChartProps {
-  data: Array<{
-    day: string;
-    tasks: number;
-  }>;
+interface CompletionData {
+  day: string;
+  tasks: number;
+  highPriority: number;
+  mediumPriority: number;
+  lowPriority: number;
 }
 
-export function CompletionBarChart({ data }: CompletionBarChartProps) {
+export function CompletionBarChart({ data }: { data: CompletionData[] }) {
+  const config = {
+    tasks: { color: "#6366f1" },
+    highPriority: { color: "#ef4444" },
+    mediumPriority: { color: "#f59e0b" },
+    lowPriority: { color: "#22c55e" },
+  };
+
   return (
-    <ResponsiveContainer width="100%" height="100%">
-      <BarChart data={data}>
-        <XAxis dataKey="day" />
-        <YAxis />
-        <Tooltip content={<ChartTooltipContent />} />
-        <Bar dataKey="tasks" fill="#6B9080" />
-      </BarChart>
-    </ResponsiveContainer>
+    <ChartContainer config={config}>
+      <ResponsiveContainer width="100%" height="100%">
+        <BarChart data={data}>
+          <CartesianGrid strokeDasharray="3 3" className="stroke-muted" />
+          <XAxis dataKey="day" />
+          <YAxis />
+          <ChartTooltip />
+          <Bar dataKey="tasks" fill="#6366f1" radius={[4, 4, 0, 0]} />
+        </BarChart>
+      </ResponsiveContainer>
+    </ChartContainer>
   );
 }

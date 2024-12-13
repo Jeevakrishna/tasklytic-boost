@@ -1,34 +1,35 @@
-import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip } from "recharts";
-import { ChartTooltipContent } from "@/components/ui/chart";
+import { PieChart, Pie, Cell, ResponsiveContainer } from "recharts";
+import { ChartContainer, ChartTooltip } from "@/components/ui/chart";
 
-interface PriorityPieChartProps {
-  data: Array<{
-    name: string;
-    value: number;
-  }>;
-}
+const COLORS = ["#ef4444", "#f59e0b", "#22c55e"];
 
-export function PriorityPieChart({ data }: PriorityPieChartProps) {
-  const COLORS = ["#FF7F50", "#FFB347", "#98FB98"];
+export function PriorityPieChart({ data }: { data: Array<{ name: string; value: number }> }) {
+  const config = {
+    high: { color: COLORS[0] },
+    medium: { color: COLORS[1] },
+    low: { color: COLORS[2] },
+  };
 
   return (
-    <ResponsiveContainer width="100%" height="100%">
-      <PieChart>
-        <Pie
-          data={data}
-          cx="50%"
-          cy="50%"
-          labelLine={false}
-          outerRadius={80}
-          fill="#8884d8"
-          dataKey="value"
-        >
-          {data.map((entry, index) => (
-            <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
-          ))}
-        </Pie>
-        <Tooltip content={<ChartTooltipContent />} />
-      </PieChart>
-    </ResponsiveContainer>
+    <ChartContainer config={config}>
+      <ResponsiveContainer width="100%" height="100%">
+        <PieChart>
+          <Pie
+            data={data}
+            cx="50%"
+            cy="50%"
+            innerRadius={60}
+            outerRadius={80}
+            paddingAngle={2}
+            dataKey="value"
+          >
+            {data.map((entry, index) => (
+              <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+            ))}
+          </Pie>
+          <ChartTooltip />
+        </PieChart>
+      </ResponsiveContainer>
+    </ChartContainer>
   );
 }
