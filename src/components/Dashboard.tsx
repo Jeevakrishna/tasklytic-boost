@@ -21,6 +21,9 @@ interface Task {
   deadline: string;
   completed?: boolean;
   streak?: number;
+  recurring?: {
+    frequency: "daily" | "weekly" | "monthly";
+  };
 }
 
 export function Dashboard() {
@@ -70,11 +73,21 @@ export function Dashboard() {
       streak: 0,
     };
     setTasks([...tasks, task]);
-    toast({
-      title: "Task Created",
-      description: "Your new task has been added successfully!",
-      duration: 3000,
-    });
+    
+    // If it's a recurring task, show a different toast message
+    if (task.recurring) {
+      toast({
+        title: "Recurring Task Created",
+        description: `Task will repeat ${task.recurring.frequency}`,
+        duration: 3000,
+      });
+    } else {
+      toast({
+        title: "Task Created",
+        description: "Your new task has been added successfully!",
+        duration: 3000,
+      });
+    }
   };
 
   const handleViewAnalytics = () => {

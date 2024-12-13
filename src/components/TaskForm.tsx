@@ -17,6 +17,7 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
+import { Checkbox } from "@/components/ui/checkbox";
 
 interface TaskFormProps {
   onSubmit: (task: {
@@ -25,6 +26,9 @@ interface TaskFormProps {
     duration: string;
     priority: "High" | "Medium" | "Low";
     deadline: string;
+    recurring?: {
+      frequency: "daily" | "weekly" | "monthly";
+    };
   }) => void;
 }
 
@@ -34,11 +38,22 @@ export function TaskForm({ onSubmit }: TaskFormProps) {
   const [duration, setDuration] = useState("");
   const [priority, setPriority] = useState<"High" | "Medium" | "Low">("Medium");
   const [deadline, setDeadline] = useState("");
+  const [isRecurring, setIsRecurring] = useState(false);
+  const [recurringFrequency, setRecurringFrequency] = useState<"daily" | "weekly" | "monthly">("weekly");
   const [open, setOpen] = useState(false);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    onSubmit({ title, description, duration, priority, deadline });
+    onSubmit({ 
+      title, 
+      description, 
+      duration, 
+      priority, 
+      deadline,
+      recurring: isRecurring ? {
+        frequency: recurringFrequency
+      } : undefined
+    });
     setOpen(false);
     // Reset form
     setTitle("");
@@ -46,6 +61,8 @@ export function TaskForm({ onSubmit }: TaskFormProps) {
     setDuration("");
     setPriority("Medium");
     setDeadline("");
+    setIsRecurring(false);
+    setRecurringFrequency("weekly");
   };
 
   return (
@@ -110,6 +127,32 @@ export function TaskForm({ onSubmit }: TaskFormProps) {
               required
             />
           </div>
+          <div className="flex items-center space-x-2">
+            <Checkbox
+              id="recurring"
+              checked={isRecurring}
+              onCheckedChange={(checked) => setIsRecurring(checked as boolean)}
+            />
+            <Label htmlFor="recurring">Recurring Task</Label>
+          </div>
+          {isRecurring && (
+            <div className="space-y-2">
+              <Label htmlFor="frequency">Frequency</Label>
+              <Select 
+                value={recurringFrequency} 
+                onValueChange={(value: "daily" | "weekly" | "monthly") => setRecurringFrequency(value)}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Select frequency" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="daily">Daily</SelectItem>
+                  <SelectItem value="weekly">Weekly</SelectItem>
+                  <SelectItem value="monthly">Monthly</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+          )}
           <Button type="submit" className="w-full">Create Task</Button>
         </form>
       </DialogContent>
