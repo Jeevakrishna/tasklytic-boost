@@ -9,6 +9,36 @@ export type Json =
 export type Database = {
   public: {
     Tables: {
+      achievements: {
+        Row: {
+          badge_icon: string
+          created_at: string | null
+          description: string
+          id: number
+          name: string
+          required_streak: number | null
+          required_tasks: number | null
+        }
+        Insert: {
+          badge_icon: string
+          created_at?: string | null
+          description: string
+          id?: number
+          name: string
+          required_streak?: number | null
+          required_tasks?: number | null
+        }
+        Update: {
+          badge_icon?: string
+          created_at?: string | null
+          description?: string
+          id?: number
+          name?: string
+          required_streak?: number | null
+          required_tasks?: number | null
+        }
+        Relationships: []
+      }
       "food tracker": {
         Row: {
           created_at: string
@@ -66,6 +96,35 @@ export type Database = {
         }
         Relationships: []
       }
+      user_achievements: {
+        Row: {
+          achievement_id: number | null
+          earned_at: string | null
+          id: number
+          user_id: string
+        }
+        Insert: {
+          achievement_id?: number | null
+          earned_at?: string | null
+          id?: number
+          user_id: string
+        }
+        Update: {
+          achievement_id?: number | null
+          earned_at?: string | null
+          id?: number
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "user_achievements_achievement_id_fkey"
+            columns: ["achievement_id"]
+            isOneToOne: false
+            referencedRelation: "achievements"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       user_goals: {
         Row: {
           created_at: string | null
@@ -94,6 +153,39 @@ export type Database = {
           daily_fat_goal?: number
           daily_protein_goal?: number
           id?: number
+          updated_at?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
+      user_stats: {
+        Row: {
+          current_streak: number | null
+          id: number
+          last_completed_at: string | null
+          longest_streak: number | null
+          points: number | null
+          total_tasks_completed: number | null
+          updated_at: string | null
+          user_id: string
+        }
+        Insert: {
+          current_streak?: number | null
+          id?: number
+          last_completed_at?: string | null
+          longest_streak?: number | null
+          points?: number | null
+          total_tasks_completed?: number | null
+          updated_at?: string | null
+          user_id: string
+        }
+        Update: {
+          current_streak?: number | null
+          id?: number
+          last_completed_at?: string | null
+          longest_streak?: number | null
+          points?: number | null
+          total_tasks_completed?: number | null
           updated_at?: string | null
           user_id?: string
         }

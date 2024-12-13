@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/button";
 import { CheckCircle2, Clock, AlertTriangle, Trophy, Trash2 } from "lucide-react";
 import { useState } from "react";
 import { useToast } from "@/hooks/use-toast";
+import { supabase } from "@/integrations/supabase/client";
 
 interface TaskCardProps {
   id: string;
@@ -37,8 +38,77 @@ export function TaskCard({
     Low: "bg-green-500",
   };
 
-  const handleComplete = () => {
-    setIsCompleted(!isCompleted);
+  const handleComplete = async () => {
+    const newCompletedState = !isCompleted;
+    setIsCompleted(newCompletedState);
+
+    if (newCompletedState) {
+      // Update user stats
+      const { data: stats, error: statsError } = await supabase
+        .from('user_stats')
+        .select('*')
+        .single();
+
+      if (!statsError && stats) {
+        const updates = {
+          total_tasks_completed: (stats.total_tasks_completed || 0) + 1,
+          points: (stats.points || 0) + 10,
+          last_completed_at: new Date().toISOString(),
+        };
+
+        // If completed within 24 hours of last completion, increment streak
+        const lastCompleted = new Date(stats.last_completed_at);
+        const now = new Date();
+        const hoursSinceLastCompletion = (now.getTime() - lastCompleted.getTime()) / (1000 * 60 * 60);
+
+        if (hoursSinceLastCompletion <= 24) {
+          updates.current_streak = (stats.current_streak || 0) + 1;
+          updates.longest_streak = Math.max(updates.current_streak, stats.longest_streak || 0);
+        } else {
+          updates.current_streak = 1;
+        }
+
+        await supabase
+          .from('user_stats')
+          .upsert({ 
+            user_id: (await supabase.auth.getUser()).data.user?.id,
+            ...updates 
+          });
+
+        // Check for achievements
+        const { data: achievements } = await supabase
+          .from('achievements')
+          .select('*')
+          .or(`required_tasks.lte.${updates.total_tasks_completed},required_streak.lte.${updates.current_streak}`);
+
+        if (achievements) {
+          for (const achievement of achievements) {
+            // Check if already earned
+            const { data: existing } = await supabase
+              .from('user_achievements')
+              .select('*')
+              .eq('achievement_id', achievement.id)
+              .single();
+
+            if (!existing) {
+              await supabase
+                .from('user_achievements')
+                .insert({
+                  user_id: (await supabase.auth.getUser()).data.user?.id,
+                  achievement_id: achievement.id,
+                });
+
+              toast({
+                title: "Achievement Unlocked! 🏆",
+                description: `${achievement.name}: ${achievement.description}`,
+                duration: 5000,
+              });
+            }
+          }
+        }
+      }
+    }
+
     toast({
       title: isCompleted ? "Task uncompleted" : "Task completed! 🎉",
       description: isCompleted ? "Task marked as pending" : "Keep up the great work!",

@@ -1,16 +1,12 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { TaskCard } from "./TaskCard";
 import { Button } from "@/components/ui/button";
-import { BarChart2, Crown, LayoutDashboard } from "lucide-react";
+import { BarChart2, Crown, LayoutDashboard, Trophy } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { TaskForm } from "./TaskForm";
 import { Analytics } from "./Analytics";
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog";
+import { supabase } from "@/integrations/supabase/client";
+import { useQuery } from "@tanstack/react-query";
 
 interface Task {
   id: string;
@@ -24,6 +20,14 @@ interface Task {
   recurring?: {
     frequency: "daily" | "weekly" | "monthly";
   };
+}
+
+interface Achievement {
+  id: number;
+  name: string;
+  description: string;
+  badge_icon: string;
+  earned_at?: string;
 }
 
 export function Dashboard() {
@@ -61,9 +65,54 @@ export function Dashboard() {
     },
   ]);
 
-  const [isPremium, setIsPremium] = useState(false);
-  const [showPremiumDialog, setShowPremiumDialog] = useState(false);
   const [view, setView] = useState<"tasks" | "analytics">("tasks");
+
+  // Fetch user achievements
+  const { data: achievements } = useQuery({
+    queryKey: ['achievements'],
+    queryFn: async () => {
+      const { data: userAchievements, error } = await supabase
+        .from('user_achievements')
+        .select(`
+          achievement_id,
+          earned_at,
+          achievements (
+            id,
+            name,
+            description,
+            badge_icon
+          )
+        `);
+
+      if (error) {
+        console.error('Error fetching achievements:', error);
+        return [];
+      }
+
+      return userAchievements.map((ua: any) => ({
+        ...ua.achievements,
+        earned_at: ua.earned_at,
+      }));
+    },
+  });
+
+  // Fetch user stats
+  const { data: userStats } = useQuery({
+    queryKey: ['userStats'],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('user_stats')
+        .select('*')
+        .single();
+
+      if (error) {
+        console.error('Error fetching user stats:', error);
+        return null;
+      }
+
+      return data;
+    },
+  });
 
   const handleAddTask = (newTask: Omit<Task, "id" | "completed" | "streak">) => {
     const task: Task = {
@@ -74,20 +123,11 @@ export function Dashboard() {
     };
     setTasks([...tasks, task]);
     
-    // If it's a recurring task, show a different toast message
-    if (task.recurring) {
-      toast({
-        title: "Recurring Task Created",
-        description: `Task will repeat ${task.recurring.frequency}`,
-        duration: 3000,
-      });
-    } else {
-      toast({
-        title: "Task Created",
-        description: "Your new task has been added successfully!",
-        duration: 3000,
-      });
-    }
+    toast({
+      title: "Task Created",
+      description: "Your new task has been added successfully!",
+      duration: 3000,
+    });
   };
 
   const handleDeleteTask = (taskId: string) => {
@@ -99,34 +139,19 @@ export function Dashboard() {
     });
   };
 
-  const handleViewAnalytics = () => {
-    if (!isPremium) {
-      setShowPremiumDialog(true);
-    } else {
-      setView("analytics");
-    }
-  };
-
-  const handleUpgrade = () => {
-    toast({
-      title: "Upgrade to Premium",
-      description: "Redirecting to payment page...",
-      duration: 3000,
-    });
-    window.open('https://paypal.com', '_blank');
-  };
-
   return (
     <div className="container mx-auto p-6 page-transition">
       <div className="flex flex-col gap-8">
         <div className="flex items-center justify-between">
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-4">
             <h1 className="text-4xl font-bold">TaskTimer+</h1>
-            {isPremium && (
-              <span className="bg-yellow-500 text-yellow-900 px-2 py-1 rounded-full text-xs font-semibold flex items-center gap-1">
-                <Crown className="h-3 w-3" />
-                Premium
-              </span>
+            {userStats && (
+              <div className="flex items-center gap-2 text-sm">
+                <Trophy className="h-4 w-4 text-yellow-500" />
+                <span>{userStats.points} points</span>
+                <span className="text-muted-foreground">•</span>
+                <span>{userStats.current_streak} day streak</span>
+              </div>
             )}
           </div>
           <div className="flex gap-4">
@@ -139,7 +164,7 @@ export function Dashboard() {
               Tasks
             </Button>
             <Button 
-              onClick={handleViewAnalytics} 
+              onClick={() => setView("analytics")} 
               variant={view === "analytics" ? "default" : "outline"}
               className="hover-scale"
             >
@@ -149,6 +174,21 @@ export function Dashboard() {
             {view === "tasks" && <TaskForm onSubmit={handleAddTask} />}
           </div>
         </div>
+
+        {/* Achievements Section */}
+        {achievements && achievements.length > 0 && (
+          <div className="flex gap-4 overflow-x-auto pb-4">
+            {achievements.map((achievement: Achievement) => (
+              <div
+                key={achievement.id}
+                className="flex items-center gap-2 bg-secondary/50 rounded-full px-4 py-2 min-w-max"
+              >
+                <Crown className="h-4 w-4 text-yellow-500" />
+                <span className="text-sm font-medium">{achievement.name}</span>
+              </div>
+            ))}
+          </div>
+        )}
         
         {view === "tasks" ? (
           <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
@@ -164,27 +204,6 @@ export function Dashboard() {
           <Analytics tasks={tasks} />
         )}
       </div>
-
-      <Dialog open={showPremiumDialog} onOpenChange={setShowPremiumDialog}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Upgrade to Premium</DialogTitle>
-          </DialogHeader>
-          <div className="space-y-4 p-4">
-            <p>Unlock premium features including:</p>
-            <ul className="list-disc pl-4 space-y-2">
-              <li>Advanced Analytics Dashboard</li>
-              <li>Team Collaboration</li>
-              <li>Custom Themes</li>
-              <li>Priority Support</li>
-            </ul>
-            <p className="font-semibold">Only $10/month</p>
-            <Button onClick={handleUpgrade} className="w-full">
-              Upgrade Now
-            </Button>
-          </div>
-        </DialogContent>
-      </Dialog>
     </div>
   );
 }
