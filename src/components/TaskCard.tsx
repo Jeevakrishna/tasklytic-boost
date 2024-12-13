@@ -1,7 +1,7 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { CheckCircle2, Clock, AlertTriangle, Trophy } from "lucide-react";
+import { CheckCircle2, Clock, AlertTriangle, Trophy, Trash2 } from "lucide-react";
 import { useState } from "react";
 import { useToast } from "@/hooks/use-toast";
 
@@ -14,6 +14,7 @@ interface TaskCardProps {
   deadline: string;
   completed?: boolean;
   streak?: number;
+  onDelete: () => void;
 }
 
 export function TaskCard({ 
@@ -24,7 +25,8 @@ export function TaskCard({
   priority, 
   deadline,
   completed = false,
-  streak = 0
+  streak = 0,
+  onDelete
 }: TaskCardProps) {
   const [isCompleted, setIsCompleted] = useState(completed);
   const { toast } = useToast();
@@ -71,14 +73,24 @@ export function TaskCard({
               <span>{streak} day streak!</span>
             </div>
           )}
-          <Button 
-            onClick={handleComplete}
-            variant={isCompleted ? "secondary" : "default"}
-            className="w-full"
-          >
-            <CheckCircle2 className="h-4 w-4 mr-2" />
-            {isCompleted ? "Mark Incomplete" : "Mark Complete"}
-          </Button>
+          <div className="flex gap-2">
+            <Button 
+              onClick={handleComplete}
+              variant={isCompleted ? "secondary" : "default"}
+              className="flex-1"
+            >
+              <CheckCircle2 className="h-4 w-4 mr-2" />
+              {isCompleted ? "Mark Incomplete" : "Mark Complete"}
+            </Button>
+            <Button
+              onClick={onDelete}
+              variant="destructive"
+              size="icon"
+              className="shrink-0"
+            >
+              <Trash2 className="h-4 w-4" />
+            </Button>
+          </div>
         </div>
       </CardContent>
     </Card>

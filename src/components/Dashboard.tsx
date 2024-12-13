@@ -90,6 +90,15 @@ export function Dashboard() {
     }
   };
 
+  const handleDeleteTask = (taskId: string) => {
+    setTasks(tasks.filter(task => task.id !== taskId));
+    toast({
+      title: "Task Deleted",
+      description: "The task has been permanently removed",
+      duration: 3000,
+    });
+  };
+
   const handleViewAnalytics = () => {
     if (!isPremium) {
       setShowPremiumDialog(true);
@@ -144,7 +153,11 @@ export function Dashboard() {
         {view === "tasks" ? (
           <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
             {tasks.map((task) => (
-              <TaskCard key={task.id} {...task} />
+              <TaskCard 
+                key={task.id} 
+                {...task} 
+                onDelete={() => handleDeleteTask(task.id)}
+              />
             ))}
           </div>
         ) : (
