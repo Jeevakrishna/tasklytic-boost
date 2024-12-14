@@ -139,12 +139,12 @@ export function Dashboard() {
     });
   };
 
-  return (
+ return (
     <div className="container mx-auto p-6 page-transition">
       <div className="flex flex-col gap-8">
-        <div className="flex flex-col md:flex-row items-start justify-between">
-          <div className="flex items-center gap-4 mb-4 md:mb-0">
-            <h1 className="text-3xl md:text-4xl font-bold">TaskTimer+</h1>
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-4">
+            <h1 className="text-4xl font-bold">TaskTimer+</h1>
             {userStats && (
               <div className="flex items-center gap-2 text-sm">
                 <Trophy className="h-4 w-4 text-yellow-500" />
@@ -174,7 +174,7 @@ export function Dashboard() {
             {view === "tasks" && <TaskForm onSubmit={handleAddTask} />}
           </div>
         </div>
-  
+
         {/* Achievements Section */}
         {achievements && achievements.length > 0 && (
           <div className="flex gap-4 overflow-x-auto pb-4">
@@ -189,10 +189,9 @@ export function Dashboard() {
             ))}
           </div>
         )}
-  
-        {/* Tasks or Analytics Section */}
+        
         {view === "tasks" ? (
-          <div className="grid gap-6 sm:grid-cols-1 md:grid-cols-2 lg:grid-cols-3">
+          <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
             {tasks.map((task) => (
               <TaskCard 
                 key={task.id} 
@@ -207,4 +206,4 @@ export function Dashboard() {
       </div>
     </div>
   );
-};
+} 
