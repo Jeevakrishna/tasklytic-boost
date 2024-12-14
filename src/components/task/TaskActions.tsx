@@ -1,6 +1,7 @@
 import { Button } from "@/components/ui/button";
 import { CheckCircle2, Trash2, Repeat } from "lucide-react";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
+import { useState } from "react";
 
 interface TaskActionsProps {
   isCompleted: boolean;
@@ -12,16 +13,29 @@ interface TaskActionsProps {
 }
 
 export function TaskActions({ isCompleted, onComplete, onDelete, recurring }: TaskActionsProps) {
+  const [isLoading, setIsLoading] = useState(false);
+
+  const handleComplete = async () => {
+    try {
+      setIsLoading(true);
+      await onComplete();
+    } catch (error) {
+      console.error('Error completing task:', error);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
   return (
     <div className="flex gap-2">
       <Button 
-        onClick={onComplete}
+        onClick={handleComplete}
         variant={isCompleted ? "secondary" : "default"}
         className="flex-1"
-        disabled={isCompleted} // Disable the button when task is completed
+        disabled={isCompleted || isLoading}
       >
         <CheckCircle2 className="h-4 w-4 mr-2" />
-        {isCompleted ? "Completed" : "Mark Complete"}
+        {isLoading ? "Saving..." : isCompleted ? "Completed" : "Mark Complete"}
       </Button>
       {recurring && (
         <TooltipProvider>
@@ -42,6 +56,7 @@ export function TaskActions({ isCompleted, onComplete, onDelete, recurring }: Ta
         variant="destructive"
         size="icon"
         className="shrink-0"
+        disabled={isLoading}
       >
         <Trash2 className="h-4 w-4" />
       </Button>
