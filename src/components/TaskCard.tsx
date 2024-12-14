@@ -1,7 +1,4 @@
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
-import { CheckCircle2, Clock, AlertTriangle, Trophy, Trash2, Repeat } from "lucide-react";
+import { Card, CardContent } from "@/components/ui/card";
 import { useState } from "react";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
@@ -38,6 +35,7 @@ export function TaskCard({
   onDelete
 }: TaskCardProps) {
   const [isCompleted, setIsCompleted] = useState(completed);
+  const [isLoading, setIsLoading] = useState(false);
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
@@ -57,6 +55,7 @@ export function TaskCard({
     queryFn: async () => {
       if (!user?.id) return null;
 
+      // First try to get existing stats
       const { data: existingStats, error: fetchError } = await supabase
         .from('user_stats')
         .select('*')
@@ -82,7 +81,7 @@ export function TaskCard({
 
       if (insertError) {
         console.error('Error creating user stats:', insertError);
-        throw insertError;
+        return null;
       }
 
       return newStats;
@@ -90,11 +89,10 @@ export function TaskCard({
   });
 
   const handleComplete = async () => {
-    if (!user?.id || !userStats) return;
+    if (!user?.id || !userStats || isCompleted || isLoading) return;
 
-    // Only allow marking as complete, not uncomplete
-    if (!isCompleted) {
-      setIsCompleted(true);
+    try {
+      setIsLoading(true);
 
       const now = new Date();
       const lastCompleted = userStats.last_completed_at ? new Date(userStats.last_completed_at) : null;
@@ -111,17 +109,10 @@ export function TaskCard({
         newStreak = 1;
       }
 
-      // Update task completion status in Supabase
-      const { error: taskError } = await supabase
-        .from('tasks')
-        .update({ completed: true })
-        .eq('id', id);
+      // Update task in local state
+      setIsCompleted(true);
 
-      if (taskError) {
-        console.error('Error updating task:', taskError);
-        return;
-      }
-
+      // Update user stats in Supabase
       const { error: updateError } = await supabase
         .from('user_stats')
         .update({
@@ -134,8 +125,7 @@ export function TaskCard({
         .eq('user_id', user.id);
 
       if (updateError) {
-        console.error('Error updating user stats:', updateError);
-        return;
+        throw updateError;
       }
 
       await refetchStats();
@@ -148,6 +138,17 @@ export function TaskCard({
           : "Keep up the great work!",
         duration: 3000,
       });
+    } catch (error) {
+      console.error('Error completing task:', error);
+      setIsCompleted(false);
+      toast({
+        title: "Error",
+        description: "Failed to complete task. Please try again.",
+        duration: 3000,
+        variant: "destructive",
+      });
+    } finally {
+      setIsLoading(false);
     }
   };
 
@@ -166,6 +167,7 @@ export function TaskCard({
             onComplete={handleComplete}
             onDelete={onDelete}
             recurring={recurring}
+            isLoading={isLoading}
           />
         </div>
       </CardContent>

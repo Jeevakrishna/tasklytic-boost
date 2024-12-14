@@ -1,35 +1,28 @@
 import { Button } from "@/components/ui/button";
 import { CheckCircle2, Trash2, Repeat } from "lucide-react";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
-import { useState } from "react";
 
 interface TaskActionsProps {
   isCompleted: boolean;
   onComplete: () => void;
   onDelete: () => void;
+  isLoading: boolean;
   recurring?: {
     frequency: "daily" | "weekly" | "monthly";
   };
 }
 
-export function TaskActions({ isCompleted, onComplete, onDelete, recurring }: TaskActionsProps) {
-  const [isLoading, setIsLoading] = useState(false);
-
-  const handleComplete = async () => {
-    try {
-      setIsLoading(true);
-      await onComplete();
-    } catch (error) {
-      console.error('Error completing task:', error);
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
+export function TaskActions({ 
+  isCompleted, 
+  onComplete, 
+  onDelete, 
+  recurring,
+  isLoading 
+}: TaskActionsProps) {
   return (
     <div className="flex gap-2">
       <Button 
-        onClick={handleComplete}
+        onClick={onComplete}
         variant={isCompleted ? "secondary" : "default"}
         className="flex-1"
         disabled={isCompleted || isLoading}
