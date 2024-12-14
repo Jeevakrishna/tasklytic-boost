@@ -89,38 +89,43 @@ export function TaskCard({
   });
 
   const handleComplete = async () => {
-    if (!user?.id || !userStats || isCompleted || isLoading) return;
+    if (!user?.id || !userStats || isLoading) return;
 
     try {
       setIsLoading(true);
+
+      // Toggle completion state
+      const newCompletionState = !isCompleted;
+      setIsCompleted(newCompletionState);
 
       const now = new Date();
       const lastCompleted = userStats.last_completed_at ? new Date(userStats.last_completed_at) : null;
       
       let newStreak = userStats.current_streak || 0;
-      if (lastCompleted) {
-        const hoursSinceLastCompletion = (now.getTime() - lastCompleted.getTime()) / (1000 * 60 * 60);
-        if (hoursSinceLastCompletion <= 24) {
-          newStreak += 1;
+      if (newCompletionState) { // Only update streak when completing
+        if (lastCompleted) {
+          const hoursSinceLastCompletion = (now.getTime() - lastCompleted.getTime()) / (1000 * 60 * 60);
+          if (hoursSinceLastCompletion <= 24) {
+            newStreak += 1;
+          } else {
+            newStreak = 1;
+          }
         } else {
           newStreak = 1;
         }
-      } else {
-        newStreak = 1;
+      } else { // When marking as incomplete
+        newStreak = Math.max(0, newStreak - 1);
       }
-
-      // Update task in local state
-      setIsCompleted(true);
 
       // Update user stats in Supabase
       const { error: updateError } = await supabase
         .from('user_stats')
         .update({
-          total_tasks_completed: (userStats.total_tasks_completed || 0) + 1,
-          points: (userStats.points || 0) + 10,
+          total_tasks_completed: (userStats.total_tasks_completed || 0) + (newCompletionState ? 1 : -1),
+          points: (userStats.points || 0) + (newCompletionState ? 10 : -10),
           current_streak: newStreak,
           longest_streak: Math.max(newStreak, userStats.longest_streak || 0),
-          last_completed_at: now.toISOString(),
+          last_completed_at: newCompletionState ? now.toISOString() : null,
         })
         .eq('user_id', user.id);
 
@@ -132,18 +137,18 @@ export function TaskCard({
       await queryClient.invalidateQueries({ queryKey: ['achievements'] });
 
       toast({
-        title: "Task completed! 🎉",
-        description: recurring 
+        title: newCompletionState ? "Task completed! 🎉" : "Task marked as incomplete",
+        description: newCompletionState && recurring 
           ? `Great job! This task will repeat ${recurring.frequency}.`
-          : "Keep up the great work!",
+          : newCompletionState ? "Keep up the great work!" : "Task status updated",
         duration: 3000,
       });
     } catch (error) {
-      console.error('Error completing task:', error);
-      setIsCompleted(false);
+      console.error('Error updating task:', error);
+      setIsCompleted(!isCompleted); // Revert state on error
       toast({
         title: "Error",
-        description: "Failed to complete task. Please try again.",
+        description: "Failed to update task status. Please try again.",
         duration: 3000,
         variant: "destructive",
       });

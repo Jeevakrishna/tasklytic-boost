@@ -140,11 +140,11 @@ export function Dashboard() {
   };
 
  return (
-    <div className="container mx-auto p-6 page-transition">
-      <div className="flex flex-col gap-8">
-        <div className="flex items-center justify-between">
+    <div className="container mx-auto p-4 md:p-6 page-transition">
+      <div className="flex flex-col gap-6 md:gap-8">
+        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
           <div className="flex items-center gap-4">
-            <h1 className="text-4xl font-bold">TaskTimer+</h1>
+            <h1 className="text-3xl md:text-4xl font-bold">TaskTimer+</h1>
             {userStats && (
               <div className="flex items-center gap-2 text-sm">
                 <Trophy className="h-4 w-4 text-yellow-500" />
@@ -154,11 +154,11 @@ export function Dashboard() {
               </div>
             )}
           </div>
-          <div className="flex gap-4">
+          <div className="flex flex-wrap gap-2 md:gap-4">
             <Button 
               onClick={() => setView("tasks")} 
               variant={view === "tasks" ? "default" : "outline"}
-              className="hover-scale"
+              className="hover-scale flex-1 md:flex-none"
             >
               <LayoutDashboard className="mr-2 h-4 w-4" />
               Tasks
@@ -166,18 +166,17 @@ export function Dashboard() {
             <Button 
               onClick={() => setView("analytics")} 
               variant={view === "analytics" ? "default" : "outline"}
-              className="hover-scale"
+              className="hover-scale flex-1 md:flex-none"
             >
               <BarChart2 className="mr-2 h-4 w-4" />
               Analytics
             </Button>
-            {view === "tasks" && <TaskForm onSubmit={handleAddTask} />}
+            {view === "tasks" && <TaskForm onSubmit={handleAddTask} className="flex-1 md:flex-none" />}
           </div>
         </div>
 
-        {/* Achievements Section */}
         {achievements && achievements.length > 0 && (
-          <div className="flex gap-4 overflow-x-auto pb-4">
+          <div className="flex gap-4 overflow-x-auto pb-4 -mx-4 px-4 md:mx-0 md:px-0">
             {achievements.map((achievement: Achievement) => (
               <div
                 key={achievement.id}
@@ -191,7 +190,7 @@ export function Dashboard() {
         )}
         
         {view === "tasks" ? (
-          <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+          <div className="grid gap-4 md:gap-6 grid-cols-1 md:grid-cols-2 lg:grid-cols-3">
             {tasks.map((task) => (
               <TaskCard 
                 key={task.id} 

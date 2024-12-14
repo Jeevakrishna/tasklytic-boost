@@ -1,5 +1,5 @@
 import { Button } from "@/components/ui/button";
-import { CheckCircle2, Trash2, Repeat } from "lucide-react";
+import { CheckCircle2, XCircle, Trash2, Repeat } from "lucide-react";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 
 interface TaskActionsProps {
@@ -20,15 +20,19 @@ export function TaskActions({
   isLoading 
 }: TaskActionsProps) {
   return (
-    <div className="flex gap-2">
+    <div className="flex flex-col sm:flex-row gap-2">
       <Button 
         onClick={onComplete}
         variant={isCompleted ? "secondary" : "default"}
-        className="flex-1"
-        disabled={isCompleted || isLoading}
+        className="flex-1 min-w-[120px]"
+        disabled={isLoading}
       >
-        <CheckCircle2 className="h-4 w-4 mr-2" />
-        {isLoading ? "Saving..." : isCompleted ? "Completed" : "Mark Complete"}
+        {isCompleted ? (
+          <XCircle className="h-4 w-4 mr-2" />
+        ) : (
+          <CheckCircle2 className="h-4 w-4 mr-2" />
+        )}
+        {isLoading ? "Saving..." : isCompleted ? "Mark Incomplete" : "Mark Complete"}
       </Button>
       {recurring && (
         <TooltipProvider>
