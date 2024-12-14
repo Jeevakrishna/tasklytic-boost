@@ -57,12 +57,11 @@ export function TaskCard({
     queryFn: async () => {
       if (!user?.id) return null;
 
-      // Try to get existing stats
       const { data: existingStats, error: fetchError } = await supabase
         .from('user_stats')
         .select('*')
         .eq('user_id', user.id)
-        .single();
+        .maybeSingle();
 
       if (existingStats) {
         return existingStats;
@@ -93,10 +92,10 @@ export function TaskCard({
   const handleComplete = async () => {
     if (!user?.id || !userStats) return;
 
-    const newCompletedState = !isCompleted;
-    setIsCompleted(newCompletedState);
+    // Only allow marking as complete, not uncomplete
+    if (!isCompleted) {
+      setIsCompleted(true);
 
-    if (newCompletedState) {
       const now = new Date();
       const lastCompleted = userStats.last_completed_at ? new Date(userStats.last_completed_at) : null;
       
@@ -110,6 +109,17 @@ export function TaskCard({
         }
       } else {
         newStreak = 1;
+      }
+
+      // Update task completion status in Supabase
+      const { error: taskError } = await supabase
+        .from('tasks')
+        .update({ completed: true })
+        .eq('id', id);
+
+      if (taskError) {
+        console.error('Error updating task:', taskError);
+        return;
       }
 
       const { error: updateError } = await supabase
@@ -136,12 +146,6 @@ export function TaskCard({
         description: recurring 
           ? `Great job! This task will repeat ${recurring.frequency}.`
           : "Keep up the great work!",
-        duration: 3000,
-      });
-    } else {
-      toast({
-        title: "Task uncompleted",
-        description: "Task marked as pending",
         duration: 3000,
       });
     }

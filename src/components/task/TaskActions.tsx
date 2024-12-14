@@ -18,9 +18,10 @@ export function TaskActions({ isCompleted, onComplete, onDelete, recurring }: Ta
         onClick={onComplete}
         variant={isCompleted ? "secondary" : "default"}
         className="flex-1"
+        disabled={isCompleted} // Disable the button when task is completed
       >
         <CheckCircle2 className="h-4 w-4 mr-2" />
-        {isCompleted ? "Mark Incomplete" : "Mark Complete"}
+        {isCompleted ? "Completed" : "Mark Complete"}
       </Button>
       {recurring && (
         <TooltipProvider>
