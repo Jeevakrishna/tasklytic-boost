@@ -13,35 +13,38 @@ export function VoiceInput({ onTranscript }: VoiceInputProps) {
   const { toast } = useToast();
 
   useEffect(() => {
-    if (typeof window !== "undefined" && "SpeechRecognition" in window || "webkitSpeechRecognition" in window) {
-      const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
-      const recognition = new SpeechRecognition();
-      recognition.continuous = true;
-      recognition.interimResults = true;
+    if (typeof window !== "undefined") {
+      const SpeechRecognitionAPI = window.SpeechRecognition || window.webkitSpeechRecognition;
       
-      recognition.onresult = (event) => {
-        const transcript = Array.from(event.results)
-          .map(result => result[0])
-          .map(result => result.transcript)
-          .join("");
+      if (SpeechRecognitionAPI) {
+        const recognition = new SpeechRecognitionAPI();
+        recognition.continuous = true;
+        recognition.interimResults = true;
         
-        if (event.results[0].isFinal) {
-          onTranscript(transcript);
+        recognition.onresult = (event: SpeechRecognitionEvent) => {
+          const transcript = Array.from(event.results)
+            .map(result => result[0])
+            .map(result => result.transcript)
+            .join("");
+          
+          if (event.results[0].isFinal) {
+            onTranscript(transcript);
+            stopListening();
+          }
+        };
+
+        recognition.onerror = (event) => {
+          console.error("Speech recognition error", event);
+          toast({
+            title: "Error",
+            description: "There was an error with speech recognition. Please try again.",
+            variant: "destructive",
+          });
           stopListening();
-        }
-      };
+        };
 
-      recognition.onerror = (event) => {
-        console.error("Speech recognition error", event.error);
-        toast({
-          title: "Error",
-          description: "There was an error with speech recognition. Please try again.",
-          variant: "destructive",
-        });
-        stopListening();
-      };
-
-      setRecognition(recognition);
+        setRecognition(recognition);
+      }
     }
 
     return () => {
@@ -53,12 +56,21 @@ export function VoiceInput({ onTranscript }: VoiceInputProps) {
 
   const startListening = () => {
     if (recognition) {
-      recognition.start();
-      setIsListening(true);
-      toast({
-        title: "Listening",
-        description: "Speak now to create a task...",
-      });
+      try {
+        recognition.start();
+        setIsListening(true);
+        toast({
+          title: "Listening",
+          description: "Speak now to create a task...",
+        });
+      } catch (error) {
+        console.error("Error starting speech recognition:", error);
+        toast({
+          title: "Error",
+          description: "Could not start speech recognition. Please try again.",
+          variant: "destructive",
+        });
+      }
     } else {
       toast({
         title: "Not Supported",
@@ -70,7 +82,11 @@ export function VoiceInput({ onTranscript }: VoiceInputProps) {
 
   const stopListening = () => {
     if (recognition) {
-      recognition.stop();
+      try {
+        recognition.stop();
+      } catch (error) {
+        console.error("Error stopping speech recognition:", error);
+      }
       setIsListening(false);
     }
   };
@@ -80,6 +96,7 @@ export function VoiceInput({ onTranscript }: VoiceInputProps) {
       variant={isListening ? "destructive" : "outline"}
       size="icon"
       onClick={isListening ? stopListening : startListening}
+      className="transition-colors duration-200"
     >
       {isListening ? (
         <MicOff className="h-4 w-4" />
