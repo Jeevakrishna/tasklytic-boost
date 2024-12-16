@@ -18,6 +18,7 @@ import {
 } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
+import { VoiceInput } from "./voice/VoiceInput";
 
 interface TaskFormProps {
   onSubmit: (task: {
@@ -65,6 +66,34 @@ export function TaskForm({ onSubmit }: TaskFormProps) {
     setRecurringFrequency("weekly");
   };
 
+  const handleVoiceInput = (transcript: string) => {
+    // Simple parsing of voice input
+    const lowerTranscript = transcript.toLowerCase();
+    
+    // Set title
+    setTitle(transcript);
+    
+    // Try to parse priority
+    if (lowerTranscript.includes("high priority")) {
+      setPriority("High");
+    } else if (lowerTranscript.includes("low priority")) {
+      setPriority("Low");
+    }
+    
+    // Try to parse duration
+    const durationMatch = lowerTranscript.match(/(\d+)\s*(hour|minute|min)/);
+    if (durationMatch) {
+      const [_, amount, unit] = durationMatch;
+      setDuration(`${amount} ${unit === 'min' ? 'minute' : unit}${amount === '1' ? '' : 's'}`);
+    }
+    
+    // Try to parse deadline
+    if (lowerTranscript.includes("due")) {
+      const duePart = transcript.split("due")[1].trim();
+      setDeadline(duePart);
+    }
+  };
+
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
@@ -72,7 +101,10 @@ export function TaskForm({ onSubmit }: TaskFormProps) {
       </DialogTrigger>
       <DialogContent className="sm:max-w-[425px]">
         <DialogHeader>
-          <DialogTitle>Create New Task</DialogTitle>
+          <DialogTitle className="flex justify-between items-center">
+            Create New Task
+            <VoiceInput onTranscript={handleVoiceInput} />
+          </DialogTitle>
         </DialogHeader>
         <form onSubmit={handleSubmit} className="space-y-4">
           <div className="space-y-2">

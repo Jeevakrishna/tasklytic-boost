@@ -1,13 +1,11 @@
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { TaskCard } from "./TaskCard";
 import { Button } from "@/components/ui/button";
-import { BarChart2, Crown, LayoutDashboard, Trophy } from "lucide-react";
+import { BarChart2, Crown, LayoutDashboard, Timer } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { TaskForm } from "./TaskForm";
 import { Analytics } from "./Analytics";
-import { supabase } from "@/integrations/supabase/client";
-import { useQuery } from "@tanstack/react-query";
-import type { Achievement, UserStats } from "@/types";
+import { PomodoroTimer } from "./pomodoro/PomodoroTimer";
 
 interface Task {
   id: string;
@@ -58,71 +56,9 @@ export function Dashboard() {
     },
   ]);
 
-  const [view, setView] = useState<"tasks" | "analytics">("tasks");
-
-  // Fetch user achievements
-  const { data: achievements } = useQuery({
-    queryKey: ['achievements'],
-    queryFn: async () => {
-      const { data: userAchievements, error } = await supabase
-        .from('user_achievements')
-        .select(`
-          achievement_id,
-          earned_at,
-          achievements (
-            id,
-            name,
-            description,
-            badge_icon
-          )
-        `);
-
-      if (error) {
-        console.error('Error fetching achievements:', error);
-        return [];
-      }
-
-      return userAchievements.map((ua: any) => ({
-        ...ua.achievements,
-        earned_at: ua.earned_at,
-      }));
-    },
-  });
-
-  // Fetch or create user stats
-  const { data: userStats } = useQuery({
-    queryKey: ['userStats'],
-    queryFn: async () => {
-      // First try to get existing stats
-      const { data: existingStats, error: fetchError } = await supabase
-        .from('user_stats')
-        .select('*')
-        .single();
-
-      if (!fetchError && existingStats) {
-        return existingStats;
-      }
-
-      // If no stats exist, create default stats
-      const { data: newStats, error: createError } = await supabase
-        .from('user_stats')
-        .insert([{
-          total_tasks_completed: 0,
-          current_streak: 0,
-          longest_streak: 0,
-          points: 0
-        }])
-        .select()
-        .single();
-
-      if (createError) {
-        console.error('Error creating user stats:', createError);
-        return null;
-      }
-
-      return newStats;
-    },
-  });
+  const [view, setView] = useState<"tasks" | "analytics" | "pomodoro">("tasks");
+  const [points, setPoints] = useState(0);
+  const [currentStreak, setCurrentStreak] = useState(0);
 
   const handleAddTask = (newTask: Omit<Task, "id" | "completed" | "streak">) => {
     const task: Task = {
@@ -150,9 +86,20 @@ export function Dashboard() {
   };
 
   const handleToggleComplete = (taskId: string, completed: boolean) => {
-    setTasks(tasks.map(task => 
-      task.id === taskId ? { ...task, completed } : task
-    ));
+    setTasks(tasks.map(task => {
+      if (task.id === taskId) {
+        const updatedTask = { ...task, completed };
+        if (completed) {
+          setPoints(prev => prev + 10);
+          setCurrentStreak(prev => prev + 1);
+        } else {
+          setPoints(prev => Math.max(0, prev - 10));
+          setCurrentStreak(prev => Math.max(0, prev - 1));
+        }
+        return updatedTask;
+      }
+      return task;
+    }));
   };
 
   return (
@@ -161,14 +108,12 @@ export function Dashboard() {
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
           <div className="flex items-center gap-4">
             <h1 className="text-3xl md:text-4xl font-bold">TaskTimer+</h1>
-            {userStats && (
-              <div className="flex items-center gap-2 text-sm">
-                <Trophy className="h-4 w-4 text-yellow-500" />
-                <span>{userStats.points} points</span>
-                <span className="text-muted-foreground">•</span>
-                <span>{userStats.current_streak} day streak</span>
-              </div>
-            )}
+            <div className="flex items-center gap-2 text-sm">
+              <Crown className="h-4 w-4 text-yellow-500" />
+              <span>{points} points</span>
+              <span className="text-muted-foreground">•</span>
+              <span>{currentStreak} day streak</span>
+            </div>
           </div>
           <div className="flex flex-wrap gap-2 md:gap-4">
             <Button 
@@ -187,25 +132,19 @@ export function Dashboard() {
               <BarChart2 className="mr-2 h-4 w-4" />
               Analytics
             </Button>
+            <Button 
+              onClick={() => setView("pomodoro")} 
+              variant={view === "pomodoro" ? "default" : "outline"}
+              className="hover-scale flex-1 md:flex-none"
+            >
+              <Timer className="mr-2 h-4 w-4" />
+              Pomodoro
+            </Button>
             {view === "tasks" && <TaskForm onSubmit={handleAddTask} />}
           </div>
         </div>
-
-        {achievements && achievements.length > 0 && (
-          <div className="flex gap-4 overflow-x-auto pb-4 -mx-4 px-4 md:mx-0 md:px-0">
-            {achievements.map((achievement: Achievement) => (
-              <div
-                key={achievement.id}
-                className="flex items-center gap-2 bg-secondary/50 rounded-full px-4 py-2 min-w-max"
-              >
-                <Crown className="h-4 w-4 text-yellow-500" />
-                <span className="text-sm font-medium">{achievement.name}</span>
-              </div>
-            ))}
-          </div>
-        )}
         
-        {view === "tasks" ? (
+        {view === "tasks" && (
           <div className="grid gap-4 md:gap-6 grid-cols-1 md:grid-cols-2 lg:grid-cols-3">
             {tasks.map((task) => (
               <TaskCard 
@@ -216,9 +155,11 @@ export function Dashboard() {
               />
             ))}
           </div>
-        ) : (
-          <Analytics tasks={tasks} />
         )}
+        
+        {view === "analytics" && <Analytics tasks={tasks} />}
+        
+        {view === "pomodoro" && <PomodoroTimer />}
       </div>
     </div>
   );
