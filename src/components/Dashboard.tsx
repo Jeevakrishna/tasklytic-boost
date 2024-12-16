@@ -1,11 +1,14 @@
 import { useState } from "react";
 import { TaskCard } from "./TaskCard";
 import { Button } from "@/components/ui/button";
-import { BarChart2, Crown, LayoutDashboard, Timer } from "lucide-react";
+import { BarChart2, Crown, LayoutDashboard, Timer, Tag } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { TaskForm } from "./TaskForm";
 import { Analytics } from "./Analytics";
 import { PomodoroTimer } from "./pomodoro/PomodoroTimer";
+import { Badge } from "./ui/badge";
+import { useQuery } from "@tanstack/react-query";
+import { supabase } from "@/integrations/supabase/client";
 
 interface Task {
   id: string;
@@ -19,6 +22,7 @@ interface Task {
   recurring?: {
     frequency: "daily" | "weekly" | "monthly";
   };
+  labels?: number[];
 }
 
 export function Dashboard() {
@@ -59,6 +63,27 @@ export function Dashboard() {
   const [view, setView] = useState<"tasks" | "analytics" | "pomodoro">("tasks");
   const [points, setPoints] = useState(0);
   const [currentStreak, setCurrentStreak] = useState(0);
+  const [selectedLabel, setSelectedLabel] = useState<number | null>(null);
+
+  const { data: labels = [] } = useQuery({
+    queryKey: ["taskLabels"],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("task_labels")
+        .select("*")
+        .order("name");
+      
+      if (error) throw error;
+      return data;
+    },
+  });
+
+  const filteredTasks = selectedLabel
+    ? tasks.filter(task => {
+        const taskLabels = task.labels || [];
+        return taskLabels.includes(selectedLabel);
+      })
+    : tasks;
 
   const handleAddTask = (newTask: Omit<Task, "id" | "completed" | "streak">) => {
     const task: Task = {
@@ -145,16 +170,37 @@ export function Dashboard() {
         </div>
         
         {view === "tasks" && (
-          <div className="grid gap-4 md:gap-6 grid-cols-1 md:grid-cols-2 lg:grid-cols-3">
-            {tasks.map((task) => (
-              <TaskCard 
-                key={task.id} 
-                {...task} 
-                onDelete={() => handleDeleteTask(task.id)}
-                onToggleComplete={handleToggleComplete}
-              />
-            ))}
-          </div>
+          <>
+            <div className="flex flex-wrap gap-2">
+              <Badge
+                variant={selectedLabel === null ? "default" : "outline"}
+                className="cursor-pointer"
+                onClick={() => setSelectedLabel(null)}
+              >
+                All Tasks
+              </Badge>
+              {labels.map((label) => (
+                <Badge
+                  key={label.id}
+                  variant={selectedLabel === label.id ? "default" : "outline"}
+                  className="cursor-pointer"
+                  onClick={() => setSelectedLabel(label.id)}
+                >
+                  {label.name}
+                </Badge>
+              ))}
+            </div>
+            <div className="grid gap-4 md:gap-6 grid-cols-1 md:grid-cols-2 lg:grid-cols-3">
+              {filteredTasks.map((task) => (
+                <TaskCard 
+                  key={task.id} 
+                  {...task} 
+                  onDelete={() => handleDeleteTask(task.id)}
+                  onToggleComplete={handleToggleComplete}
+                />
+              ))}
+            </div>
+          </>
         )}
         
         {view === "analytics" && <Analytics tasks={tasks} />}

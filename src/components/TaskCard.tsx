@@ -2,10 +2,11 @@ import { Card, CardContent } from "@/components/ui/card";
 import { useState } from "react";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
-import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { useQuery } from "@tanstack/react-query";
 import { TaskActions } from "./task/TaskActions";
 import { TaskHeader } from "./task/TaskHeader";
 import { TaskStats } from "./task/TaskStats";
+import { TaskLabels } from "./task/TaskLabels";
 import { PomodoroTimer } from "./pomodoro/PomodoroTimer";
 
 interface TaskCardProps {
@@ -40,7 +41,25 @@ export function TaskCard({
   const [isLoading, setIsLoading] = useState(false);
   const [showTimer, setShowTimer] = useState(false);
   const { toast } = useToast();
-  const queryClient = useQueryClient();
+
+  const { data: taskLabels = [] } = useQuery({
+    queryKey: ["taskLabelAssignments", id],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("task_label_assignments")
+        .select("label_id")
+        .eq("task_id", id);
+      
+      if (error) throw error;
+      return data.map(assignment => assignment.label_id);
+    },
+  });
+
+  const handleLabelsChange = (newLabels: number[]) => {
+    // The TaskLabels component handles the database updates
+    // We just need to invalidate the query to refresh the UI
+    queryClient.invalidateQueries({ queryKey: ["taskLabelAssignments", id] });
+  };
 
   const handleComplete = async () => {
     if (isLoading) return;
@@ -76,6 +95,11 @@ export function TaskCard({
             duration={duration} 
             deadline={deadline} 
             streak={streak} 
+          />
+          <TaskLabels
+            taskId={id}
+            selectedLabels={taskLabels}
+            onLabelsChange={handleLabelsChange}
           />
           {showTimer && <PomodoroTimer />}
           <TaskActions 
