@@ -1,5 +1,5 @@
 import { Button } from "@/components/ui/button";
-import { CheckCircle2, XCircle, Trash2, Repeat } from "lucide-react";
+import { CheckCircle2, XCircle, Trash2, Repeat, Timer } from "lucide-react";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 
 interface TaskActionsProps {
@@ -10,6 +10,8 @@ interface TaskActionsProps {
   recurring?: {
     frequency: "daily" | "weekly" | "monthly";
   };
+  onToggleTimer: () => void;
+  showTimer: boolean;
 }
 
 export function TaskActions({ 
@@ -17,7 +19,9 @@ export function TaskActions({
   onComplete, 
   onDelete, 
   recurring,
-  isLoading 
+  isLoading,
+  onToggleTimer,
+  showTimer
 }: TaskActionsProps) {
   return (
     <div className="flex flex-col sm:flex-row gap-2">
@@ -34,6 +38,23 @@ export function TaskActions({
         )}
         {isLoading ? "Saving..." : isCompleted ? "Mark Incomplete" : "Mark Complete"}
       </Button>
+      <TooltipProvider>
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <Button 
+              variant="outline" 
+              size="icon" 
+              className="shrink-0"
+              onClick={onToggleTimer}
+            >
+              <Timer className="h-4 w-4" />
+            </Button>
+          </TooltipTrigger>
+          <TooltipContent>
+            <p>{showTimer ? "Hide Timer" : "Show Timer"}</p>
+          </TooltipContent>
+        </Tooltip>
+      </TooltipProvider>
       {recurring && (
         <TooltipProvider>
           <Tooltip>

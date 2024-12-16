@@ -6,6 +6,7 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { TaskActions } from "./task/TaskActions";
 import { TaskHeader } from "./task/TaskHeader";
 import { TaskStats } from "./task/TaskStats";
+import { PomodoroTimer } from "./pomodoro/PomodoroTimer";
 
 interface TaskCardProps {
   id: string;
@@ -37,6 +38,7 @@ export function TaskCard({
   onToggleComplete
 }: TaskCardProps) {
   const [isLoading, setIsLoading] = useState(false);
+  const [showTimer, setShowTimer] = useState(false);
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
@@ -75,12 +77,15 @@ export function TaskCard({
             deadline={deadline} 
             streak={streak} 
           />
+          {showTimer && <PomodoroTimer />}
           <TaskActions 
             isCompleted={completed}
             onComplete={handleComplete}
             onDelete={onDelete}
             recurring={recurring}
             isLoading={isLoading}
+            onToggleTimer={() => setShowTimer(!showTimer)}
+            showTimer={showTimer}
           />
         </div>
       </CardContent>
