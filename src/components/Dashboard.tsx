@@ -7,6 +7,7 @@ import { TaskForm } from "./TaskForm";
 import { Analytics } from "./Analytics";
 import { supabase } from "@/integrations/supabase/client";
 import { useQuery } from "@tanstack/react-query";
+import type { Achievement, UserStats } from "@/types";
 
 interface Task {
   id: string;
@@ -88,21 +89,38 @@ export function Dashboard() {
     },
   });
 
-  // Fetch user stats
+  // Fetch or create user stats
   const { data: userStats } = useQuery({
     queryKey: ['userStats'],
     queryFn: async () => {
-      const { data, error } = await supabase
+      // First try to get existing stats
+      const { data: existingStats, error: fetchError } = await supabase
         .from('user_stats')
         .select('*')
         .single();
 
-      if (error) {
-        console.error('Error fetching user stats:', error);
+      if (!fetchError && existingStats) {
+        return existingStats;
+      }
+
+      // If no stats exist, create default stats
+      const { data: newStats, error: createError } = await supabase
+        .from('user_stats')
+        .insert([{
+          total_tasks_completed: 0,
+          current_streak: 0,
+          longest_streak: 0,
+          points: 0
+        }])
+        .select()
+        .single();
+
+      if (createError) {
+        console.error('Error creating user stats:', createError);
         return null;
       }
 
-      return data;
+      return newStats;
     },
   });
 
