@@ -22,14 +22,6 @@ interface Task {
   };
 }
 
-interface Achievement {
-  id: number;
-  name: string;
-  description: string;
-  badge_icon: string;
-  earned_at?: string;
-}
-
 export function Dashboard() {
   const { toast } = useToast();
   const [tasks, setTasks] = useState<Task[]>([
@@ -50,7 +42,7 @@ export function Dashboard() {
       duration: "1 hour",
       priority: "Medium",
       deadline: "Tomorrow, 12 PM",
-      completed: true,
+      completed: false,
       streak: 5,
     },
     {
@@ -139,7 +131,13 @@ export function Dashboard() {
     });
   };
 
- return (
+  const handleToggleComplete = (taskId: string, completed: boolean) => {
+    setTasks(tasks.map(task => 
+      task.id === taskId ? { ...task, completed } : task
+    ));
+  };
+
+  return (
     <div className="container mx-auto p-4 md:p-6 page-transition">
       <div className="flex flex-col gap-6 md:gap-8">
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
@@ -171,7 +169,7 @@ export function Dashboard() {
               <BarChart2 className="mr-2 h-4 w-4" />
               Analytics
             </Button>
-            {view === "tasks" && <TaskForm onSubmit={handleAddTask} className="flex-1 md:flex-none" />}
+            {view === "tasks" && <TaskForm onSubmit={handleAddTask} />}
           </div>
         </div>
 
@@ -196,6 +194,7 @@ export function Dashboard() {
                 key={task.id} 
                 {...task} 
                 onDelete={() => handleDeleteTask(task.id)}
+                onToggleComplete={handleToggleComplete}
               />
             ))}
           </div>
@@ -205,4 +204,4 @@ export function Dashboard() {
       </div>
     </div>
   );
-} 
+}
